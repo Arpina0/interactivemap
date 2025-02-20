@@ -89,7 +89,7 @@ function App() {
       <Header>
         <Logo src={logo} alt="White Tulip Health Foundation Logo" />
         <Title>Whitetulip  Health Foundation</Title>
-        <Subtitle>2024 Fundraising Map</Subtitle>
+        <Subtitle>2025 Fundraising Map</Subtitle>
       </Header>
       <MapContainer>
         <InteractiveMap />
