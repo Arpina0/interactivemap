@@ -145,11 +145,64 @@ const Legend = styled.div`
   }
 `;
 
+const Dashboard = styled.div`
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background: rgba(26, 35, 51, 0.95);
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(60, 199, 255, 0.2);
+  border: 1px solid #3CC7FF;
+  backdrop-filter: blur(4px);
+  color: white;
+  width: 280px;
+
+  h3 {
+    color: #3CC7FF;
+    margin: 0 0 15px 0;
+    font-size: 1.2em;
+  }
+
+  .stat {
+    margin: 10px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(60, 199, 255, 0.2);
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    .label {
+      color: #90e0ef;
+    }
+
+    .value {
+      font-weight: 600;
+      color: white;
+    }
+  }
+`;
+
+const LocationLabel = styled.text`
+  fill: rgba(255, 255, 255, 0.7);
+  font-size: 8px;
+  text-anchor: middle;
+  pointer-events: none;
+`;
+
 function InteractiveMap() {
   const [tooltipContent, setTooltipContent] = useState(null);
   const mapRef = useRef(null);
 
   const maxAmount = Math.max(...locationData.map(d => d.amount));
+  const totalAmount = locationData.reduce((sum, loc) => sum + loc.amount, 0);
+  const totalPeople = locationData.reduce((sum, loc) => sum + loc.people, 0);
+  const totalLocations = locationData.length;
+
   const sizeScale = scaleLinear()
     .domain([0, maxAmount])
     .range([5, 20]);
@@ -177,6 +230,26 @@ function InteractiveMap() {
 
   return (
     <MapContainer ref={mapRef}>
+      <Dashboard>
+        <h3>Fundraising Overview</h3>
+        <div className="stat">
+          <span className="label">Total Amount:</span>
+          <span className="value">{formatAmount(totalAmount)}</span>
+        </div>
+        <div className="stat">
+          <span className="label">Total People:</span>
+          <span className="value">{totalPeople}</span>
+        </div>
+        <div className="stat">
+          <span className="label">Total Locations:</span>
+          <span className="value">{totalLocations}</span>
+        </div>
+        <div className="stat">
+          <span className="label">Average per Location:</span>
+          <span className="value">{formatAmount(totalAmount / totalLocations)}</span>
+        </div>
+      </Dashboard>
+
       <ComposableMap
         projection="geoAlbersUsa"
         projectionConfig={{ scale: 1000 }}
@@ -214,40 +287,50 @@ function InteractiveMap() {
             }
           </Geographies>
           
-          {locationData.map(({ name, coordinates, amount, representative, people }) => {
+          {locationData.map(({ name, coordinates, amount, people }) => {
             const position = getScreenPosition(coordinates);
+            const radius = sizeScale(amount);
             return (
-              <Marker
-                key={name}
-                coordinates={coordinates}
-                onMouseEnter={() => {
-                  setTooltipContent({
-                    name,
-                    details: [
-                      { label: "Representative", value: representative },
-                      { label: "People", value: people },
-                      { label: "Amount", value: formatAmount(amount) }
-                    ],
-                    position
-                  });
-                }}
-                onMouseLeave={() => {
-                  setTooltipContent(null);
-                }}
-              >
-                <circle
-                  r={sizeScale(amount)}
-                  fill="#3CC7FF"
-                  stroke="#3CC7FF"
-                  strokeWidth={1}
-                  opacity={0.85}
-                  style={{
-                    transition: 'all 0.3s ease',
-                    cursor: 'pointer',
-                    filter: 'drop-shadow(0 0 6px rgba(60, 199, 255, 0.5))',
+              <g key={name}>
+                <Marker
+                  coordinates={coordinates}
+                  onMouseEnter={() => {
+                    setTooltipContent({
+                      name,
+                      details: [
+                        { label: "People", value: people },
+                        { label: "Amount", value: formatAmount(amount) }
+                      ],
+                      position
+                    });
                   }}
-                />
-              </Marker>
+                  onMouseLeave={() => {
+                    setTooltipContent(null);
+                  }}
+                >
+                  <circle
+                    r={radius}
+                    fill="#3CC7FF"
+                    stroke="#3CC7FF"
+                    strokeWidth={1}
+                    opacity={0.85}
+                    style={{
+                      transition: 'all 0.3s ease',
+                      cursor: 'pointer',
+                      filter: 'drop-shadow(0 0 6px rgba(60, 199, 255, 0.5))',
+                    }}
+                  />
+                  <LocationLabel
+                    y={radius + 8}
+                    style={{
+                      fontSize: '8px',
+                      fontFamily: 'Inter, sans-serif'
+                    }}
+                  >
+                    {name}
+                  </LocationLabel>
+                </Marker>
+              </g>
             );
           })}
         </ZoomableGroup>
